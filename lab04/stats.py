@@ -47,7 +47,7 @@ def average_by_city(records: list[dict]) -> dict:
 
     averages = {}
     for city in city_totals:
-        averages[city] = round(city_totals[city] / city_counts[city], 1)
+        averages[city] = round(city_totals[city] / city_counts[city]
 
     return averages
 
