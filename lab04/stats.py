@@ -28,7 +28,7 @@ def read_valid(lines: list[str]) -> tuple[list[dict], int]:
         try:
             record = parse_record(cleaned_line)
             records.append(record)
-        except ValueError:
+        except Exception:
             errors_count += 1
 
     return records, errors_count
