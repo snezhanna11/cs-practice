@@ -9,7 +9,8 @@ def parse_record(line: str) -> dict:
         raise ValueError("Поля 'город' и 'дата' не могут быть пустыми")
 
     try:
-        temp = float(temp_str)
+        normalized_temp = temp_str.replace(",", ".")
+        temp = float(normalized_temp)
     except ValueError:
         raise ValueError("Невозможно преобразовать температуру в число")
 
