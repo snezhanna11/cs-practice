@@ -1,10 +1,21 @@
 import sys
-from stats import read_valid, average_by_city, warmest_city
+from stats import read_valid, parse_record, average_by_city, warmest_city
 
 def main():
     lines = sys.stdin.read().splitlines()
-    records, errors_count = read_valid(lines)
     
+    records = read_valid(lines)
+    
+    errors_count = 0
+    for line in lines:
+        cleaned = line.strip()
+        if not cleaned:
+            continue
+        try:
+            parse_record(cleaned)
+        except Exception:
+            errors_count += 1
+
     print(len(records))
     print(errors_count)
     
