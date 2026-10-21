@@ -1,66 +1,74 @@
 from collections import Counter
 
-
-KNOWN_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR"}
-
-
 def parse_event(line: str) -> dict:
-    parts = line.strip().split(maxsplit=2)
-
+    stripped_line = line.strip()
+    if not stripped_line:
+        raise ValueError("Пустая строка")
+        
+    parts = stripped_line.split(maxsplit=2)
     if len(parts) != 3:
-        raise ValueError("Некорректная строка журнала")
+        raise ValueError("Неверный формат строки лога")
+        
+    time_str, level_str, message_str = parts
+    
+    valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR"}
+    if level_str not in valid_levels:
+        raise ValueError(f"Неизвестный уровень лога: {level_str}")
+        
+    return {
+        "time": time_str,
+        "level": level_str,
+        "message": message_str
+    }
 
-    timestamp, level, message = parts
-
-    if not timestamp or level not in KNOWN_LEVELS or not message:
-        raise ValueError("Некорректная строка журнала")
-
-    return {"time": timestamp, "level": level, "message": message}
-
-
-def count_levels(lines: list[str]) -> dict:
-    """Считает количество строк каждого уровня; плохие строки идут в BROKEN."""
-    counts = Counter()
-
+def count_levels(lines) -> dict:
+    counts = {
+        "BROKEN": 0,
+        "DEBUG": 0,
+        "INFO": 0,
+        "WARNING": 0,
+        "ERROR": 0
+    }
+    
     for line in lines:
-        try:
-            event = parse_event(line)
-        except (ValueError, TypeError, AttributeError):
-            counts["BROKEN"] += 1
-        else:
-            counts[event["level"]] += 1
-    return dict(sorted(counts.items()))
-
-
-def top_errors(lines: list[str], n: int) -> list[list]:
-        if n <= 0:
-        return []
-
-    errors = Counter()
-
-    for line in lines:
-        try:
-            event = parse_event(line)
-        except (ValueError, TypeError, AttributeError):
+        if not line.strip():
             continue
+        try:
+            event = parse_event(line)
+            counts[event["level"]] += 1
+        except ValueError:
+            counts["BROKEN"] += 1
+            
+    return counts
 
-        if event["level"] == "ERROR":
-            errors[event["message"]] += 1
+def top_errors(lines, n: int) -> list:
+    error_messages = []
+    
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            event = parse_event(line)
+            if event["level"] == "ERROR":
+                error_messages.append(event["message"])
+        except ValueError:
+            continue
+            
+    counter = Counter(error_messages)
+    sorted_errors = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    
+    return [[msg, count] for msg, count in sorted_errors[:n]]
 
-    ordered = sorted(errors.items(), key=lambda item: (-item[1], item[0]))
-    return [[message, count] for message, count in ordered[:n]]
-
-
-def format_report(counts: dict, errors: list[list]) -> str:
-    result = ["Отчёт по журналу"]
-
-    for level, count in sorted(counts.items()):
-        result.append(f"{level}: {count}")
-
-    result.append("")
-    result.append("Частые ошибки:")
-
-    for error_desc, count in errors:
-        result.append(f"- {error_desc} - {count}")
-
-    return "\n".join(result) + "\n"
+def format_report(counts: dict, errors: list) -> str:
+    report_lines = []
+    
+    for level in sorted(counts.keys()):
+        report_lines.append(f"{level}: {counts[level]}")
+        
+    report_lines.append("")
+    report_lines.append("Частые ошибки:")
+    
+    for err, count in errors:
+        report_lines.append(f"- {err} — {count}")
+        
+    return "\n".join(
