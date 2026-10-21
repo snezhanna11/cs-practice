@@ -71,4 +71,4 @@ def format_report(counts: dict, errors: list) -> str:
     for err, count in errors:
         report_lines.append(f"- {err} — {count}")
         
-    return "\n".join(
+    return "\n".join(report_lines) + "\n"
