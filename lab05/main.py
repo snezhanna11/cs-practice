@@ -1,31 +1,72 @@
-from collections import Counter
+from logstats import parse_event, count_levels, top_errors, format_report
 
-def count_levels(log_lines):
-    levels = []
-    for line in log_lines:
-        parts = line.split()
-        if len(parts) >= 2:
-            level = parts[1]
-            levels.append(level)
-    return dict(Counter(levels))
 
-def format_report(level_counts, top_errors):
-    result = ["Отчёт по журналу", ""]
-    
-    for level, count in level_counts.items():
-        result.append(f"{level}: {count}")
-        
-    result.append("Частые ошибки:")
-    
-    for error_desc, count in top_errors:
-        result.append(f"- {error_desc} – {count}")
-        
-    return "\n".join(result) + "\n"
+def main():
+    filename = input().strip()
 
-def process_log_file(filename):
+    total_lines = 0
+    error_lines = 0
+    broken_lines = 0
+    counts = {}
+    errors = []
+
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            lines = [line.strip() for line in f if line.strip()]
-        return lines
-    except FileNotFoundError:
-        return []
+        with open(filename, "r", encoding="utf-8") as log:
+            for line in log:
+                line = line.strip()
+                if not line:
+                    continue
+
+                total_lines += 1
+                try:
+                    event = parse_event(line)
+                except ValueError:
+                    broken_lines += 1
+                else:
+                    if event["level"] == "ERROR":
+                        error_lines += 1
+        with open(filename, "r", encoding="utf-8") as log:
+            counts = {}
+            error_messages = []
+            from collections import Counter
+            level_counter = Counter()
+            error_counter = Counter()
+
+            for line in log:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = parse_event(line)
+                except ValueError:
+                    level_counter["BROKEN"] += 1
+                    continue
+
+                level_counter[event["level"]] += 1
+                if event["level"] == "ERROR":
+                    error_counter[event["message"]] += 1
+
+            counts = dict(sorted(level_counter.items()))
+            errors = [
+                [message, count]
+                for message, count in sorted(
+                    error_counter.items(), key=lambda item: (-item[1], item[0])
+                )[:3]
+            ]
+
+        report = format_report(counts, errors)
+        with open("report.txt", "w", encoding="utf-8") as report_file:
+            report_file.write(report)
+
+        print(total_lines)
+        print(error_lines)
+        print(broken_lines)
+
+    except OSError:
+        print(0)
+        print(0)
+        print(0)
+
+
+if __name__ == "__main__":
+    main()
