@@ -1,20 +1,31 @@
-from logstats import count_levels, format_report, top_errors
+from collections import Counter
 
+def count_levels(log_lines):
+    levels = []
+    for line in log_lines:
+        parts = line.split()
+        if len(parts) >= 2:
+            level = parts[1]
+            levels.append(level)
+    return dict(Counter(levels))
 
-def main():
-  filename = input().strip()
+def format_report(level_counts, top_errors):
+    result = ["Отчёт по журналу", ""]
+    
+    for level, count in level_counts.items():
+        result.append(f"{level}: {count}")
+        
+    result.append("Частые ошибки:")
+    
+    for error_desc, count in top_errors:
+        result.append(f"- {error_desc} – {count}")
+        
+    return "\n".join(result) + "\n"
 
-  with open(filename, "r", encoding="utf-8") as f:
-    counts = count_levels(f)
-
-  with open(filename, "r", encoding="utf-8") as f:
-    errors = top_errors(f, 3)
-
-  report_text = format_report(counts, errors)
-
-  with open("report.txt", "w", encoding="utf-8") as f:
-    f.write(report_text)
-
-
-if __name__ == "__main__":
-  main()
+def process_log_file(filename):
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            lines = [line.strip() for line in f if line.strip()]
+        return lines
+    except FileNotFoundError:
+        return []
