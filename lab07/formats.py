@@ -2,25 +2,31 @@ import json
 import re
 
 _INT = re.compile(r"[-+]?\d+")
-_FLOAT = re.compile(r"[-+]?\d+\.\d+")
+_FLOAT = re.compile(r"[-+]?\d+[.,]\d+")
 
 def csv_to_records(text: str) -> list[dict]:
     lines = [line for line in text.lstrip("\ufeff").splitlines() if line.strip()]
     if not lines:
         return []
-    header = lines[0].split(",")
+    header = [h.strip() for h in lines[0].split(",")]
     records = []
     for line in lines[1:]:
-        values = line.split(",")
+        values = [v.strip() for v in line.split(",")]
         values += [""] * (len(header) - len(values))
         records.append(dict(zip(header, values)))
     return records
 
 def _convert(value: str):
-    if _INT.fullmatch(value):
-        return int(value)
-    if _FLOAT.fullmatch(value):
-        return float(value)
+    value = value.strip()
+    # Заменяем запятую на точку для корректной конвертации чисел с плавающей точкой
+    val_normalized = value.replace(",", ".")
+    if _INT.fullmatch(val_normalized):
+        return int(val_normalized)
+    if _FLOAT.fullmatch(val_normalized):
+        try:
+            return float(val_normalized)
+        except ValueError:
+            pass
     low = value.lower()
     if low in ("true", "yes"):
         return True
@@ -66,6 +72,3 @@ def merge_by_key(rows: list[dict], extra: dict, key: str = "id") -> list[dict]:
 
 def records_to_json(records: list[dict]) -> str:
     return json.dumps(records, ensure_ascii=False, indent=2, sort_keys=True)
-
-
-
