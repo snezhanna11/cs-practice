@@ -4,9 +4,8 @@ import re
 _INT = re.compile(r"[-+]?\d+")
 _FLOAT = re.compile(r"[-+]?\d+\.\d+")
 
-
 def csv_to_records(text: str) -> list[dict]:
-       lines = [line for line in text.lstrip("\ufeff").splitlines() if line.strip()]
+    lines = [line for line in text.lstrip("\ufeff").splitlines() if line.strip()]
     if not lines:
         return []
     header = lines[0].split(",")
@@ -16,7 +15,6 @@ def csv_to_records(text: str) -> list[dict]:
         values += [""] * (len(header) - len(values))
         records.append(dict(zip(header, values)))
     return records
-
 
 def _convert(value: str):
     if _INT.fullmatch(value):
@@ -30,10 +28,9 @@ def _convert(value: str):
         return False
     return value
 
-
 def parse_settings(lines: list[str]) -> dict:
     result = {}
-    current_list = None  
+    current_list = None
     for raw in lines:
         line = raw.split("#", 1)[0].strip()
         if not line:
@@ -54,7 +51,6 @@ def parse_settings(lines: list[str]) -> dict:
             result[key] = _convert(value)
     return result
 
-
 def merge_by_key(rows: list[dict], extra: dict, key: str = "id") -> list[dict]:
     merged = []
     for row in rows:
@@ -68,7 +64,8 @@ def merge_by_key(rows: list[dict], extra: dict, key: str = "id") -> list[dict]:
         merged.append({**info, **row} if info is not None else dict(row))
     return merged
 
-
 def records_to_json(records: list[dict]) -> str:
     return json.dumps(records, ensure_ascii=False, indent=2, sort_keys=True)
-#готово
+
+
+
